@@ -1,0 +1,83 @@
+/* Overlays, debug info, custom scrollbar utility, and description footer */
+
+/* Overlays */
+.loading-overlay, .error-overlay {
+    position: absolute;
+    background: rgba(10, 10, 15, 0.85);
+    color: var(--text-primary);
+    padding: 16px 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-mid);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.error-overlay {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--red);
+}
+
+/* WASM debug info */
+.debug-info {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-disabled);
+    padding: 4px 0;
+    margin-top: 4px;
+}
+
+/* Custom scrollbar utility class */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(124, 111, 239, 0.35) transparent;
+}
+
+.custom-scroll::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: rgba(124, 111, 239, 0.35);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 111, 239, 0.6);
+}
+
+.custom-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Description footer — bottom-right info card in builder panels */
+.desc-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-panel);
+    flex-shrink: 0;
+}
+
+.desc-footer-label {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-disabled);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.desc-footer-text {
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}

@@ -1,0 +1,163 @@
+/* Toolbar, buttons, toggle switch, and collision warning */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    padding: 0 8px;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+/* Base button */
+button, .button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    line-height: 1;
+    position: relative;
+}
+
+button:hover:not(:disabled), .button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+button:active:not(:disabled) {
+    background: var(--bg-active);
+}
+
+button:disabled {
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+
+/* Play/Pause button */
+.play-btn {
+    background: linear-gradient(135deg, var(--accent), #9d8ef5) !important;
+    color: #fff !important;
+    padding: 6px 14px !important;
+    gap: 7px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 2px 8px rgba(124, 111, 239, 0.4);
+    transition: all var(--transition) !important;
+}
+
+.play-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--accent-light), #b8b0f8) !important;
+    box-shadow: 0 4px 16px rgba(124, 111, 239, 0.5), 0 0 0 1px rgba(124, 111, 239, 0.3) !important;
+    transform: translateY(-1px);
+}
+
+.play-btn.running {
+    background: linear-gradient(135deg, #ef4444, #f87171) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4) !important;
+}
+
+.play-btn.running:hover:not(:disabled) {
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5) !important;
+    transform: translateY(-1px);
+}
+
+.play-btn.blocked, .play-btn:disabled {
+    background: linear-gradient(135deg, #374151, #4b5563) !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    transform: none !important;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    transition: background var(--transition);
+}
+.toggle-switch:hover {
+    background: var(--bg-hover);
+}
+.toggle-track {
+    position: relative;
+    width: 30px;
+    height: 16px;
+    background: var(--border-strong);
+    border-radius: 8px;
+    transition: background var(--transition);
+    flex-shrink: 0;
+}
+.toggle-track.on {
+    background: var(--accent);
+}
+.toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left var(--transition);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle-track.on .toggle-thumb {
+    left: 16px;
+}
+.toggle-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.toggle-track.on + .toggle-label {
+    color: var(--accent-light);
+}
+
+/* Collision warning banner */
+.collision-warning {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius);
+    padding: 4px 10px;
+    animation: pulse-warning 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}

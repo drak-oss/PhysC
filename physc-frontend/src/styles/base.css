@@ -1,0 +1,49 @@
+/* Base reset, global scrollbars, and body styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Global scrollbar override (no raw browser scrollbars anywhere) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(124, 111, 239, 0.32) transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 4px; }
+*::-webkit-scrollbar-thumb { background: rgba(124, 111, 239, 0.38); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(124, 111, 239, 0.65); }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+/* Scrollable inputs / textareas */
+input[type="number"], input[type="text"], select, textarea {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(124, 111, 239, 0.35) transparent;
+}
+input[type="number"]::-webkit-scrollbar,
+input[type="text"]::-webkit-scrollbar,
+select::-webkit-scrollbar,
+textarea::-webkit-scrollbar { width: 5px; height: 5px; }
+input[type="number"]::-webkit-scrollbar-track,
+input[type="text"]::-webkit-scrollbar-track,
+select::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+input[type="number"]::-webkit-scrollbar-thumb,
+input[type="text"]::-webkit-scrollbar-thumb,
+select::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb { background: rgba(124,111,239,0.45); border-radius: 3px; }
+input[type="number"]::-webkit-scrollbar-thumb:hover,
+input[type="text"]::-webkit-scrollbar-thumb:hover,
+select::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover { background: rgba(124,111,239,0.7); }
+
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    background-color: var(--bg-void);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}

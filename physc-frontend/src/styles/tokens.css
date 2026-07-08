@@ -1,0 +1,57 @@
+/* Design tokens — all CSS custom properties */
+
+:root {
+    /* Base surfaces */
+    --bg-void:       #0a0a0f;
+    --bg-base:       #0f0f17;
+    --bg-panel:      #141420;
+    --bg-panel-alt:  #191928;
+    --bg-surface:    #1e1e30;
+    --bg-hover:      #252540;
+    --bg-active:     #2d2d50;
+
+    /* Borders */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-mid:    rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.18);
+
+    /* Text */
+    --text-primary:  #e8e8f4;
+    --text-secondary: #9899b8;
+    --text-muted:    #5a5b78;
+    --text-disabled: #3a3b52;
+
+    /* Accent — electric violet */
+    --accent:        #7c6fef;
+    --accent-light:  #a09af7;
+    --accent-dim:    rgba(124, 111, 239, 0.18);
+    --accent-border: rgba(124, 111, 239, 0.4);
+
+    /* Status colors */
+    --green:         #34d399;
+    --green-dim:     rgba(52, 211, 153, 0.15);
+    --orange:        #fb923c;
+    --orange-dim:    rgba(251, 146, 60, 0.15);
+    --red:           #f87171;
+    --red-dim:       rgba(248, 113, 113, 0.15);
+    --blue:          #60a5fa;
+    --blue-dim:      rgba(96, 165, 250, 0.15);
+    --teal:          #2dd4bf;
+    --teal-dim:      rgba(45, 212, 191, 0.15);
+
+    /* Radius */
+    --radius-sm: 5px;
+    --radius:    8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-accent: 0 0 20px rgba(124, 111, 239, 0.25);
+
+    /* Transitions */
+    --transition: 0.18s ease;
+    --transition-fast: 0.1s ease;
+}
