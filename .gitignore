@@ -1,5 +1,51 @@
-# IntelliJ IDEA
-.idea/
+# ───── Java / Maven (backend) ─────
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# Claude Code session data
+# ───── Node / Vite (frontend) ─────
+node_modules/
+dist/
+dist-ssr/
+
+# ───── WebAssembly / Emscripten ─────
+physc-frontend/emsdk/
+physc-frontend/build/
+
+# ───── Environment & secrets ─────
+.env
+.env.local
+.env.*.local
+
+# ───── Deployment (remove when ready to deploy) ─────
+physc-backend/Dockerfile
+physc-backend/.dockerignore
+
+# ───── IntelliJ IDEA ─────
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# ───── VS Code ─────
+.vscode/
+!.vscode/extensions.json
+
+# ───── Claude Code ─────
 .claude/
+
+# ───── OS ─────
+.DS_Store
+Thumbs.db
+
+# ───── Logs ─────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ───── Misc editor ─────
+*.suo
+*.sw?
