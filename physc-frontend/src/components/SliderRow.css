@@ -1,0 +1,26 @@
+.sr-read-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.sr-read-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sr-read-value {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-disabled);
+}
+
+.sr-read-unit {
+  opacity: 0.5;
+  margin-left: 3px;
+}
+
+.slider-label--readonly {
+  color: var(--text-disabled);
+}

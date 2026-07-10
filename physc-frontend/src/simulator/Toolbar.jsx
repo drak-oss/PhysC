@@ -3,6 +3,7 @@ import { commandManager } from '../commands/CommandManager';
 import { useEditorStore } from '../store/editorStore';
 import { serializeToSimulator } from '../builder/serializationSystem';
 import { UndoIcon, RedoIcon, SaveIcon, OpenIcon, PlayIcon, PauseIcon, StepIcon, ResetIcon, VectorsIcon, TrashIcon } from '../components/icons/SimulatorIcons';
+import './Toolbar.css';
 
 export default function Toolbar({ physicsApi, running, setRunning }) {
     const [canUndo, setCanUndo] = useState(false);
@@ -12,8 +13,6 @@ export default function Toolbar({ physicsApi, running, setRunning }) {
     const collidingIds   = useEditorStore(s => s.collidingIds);
     const showVectors    = useEditorStore(s => s.showVelocityVectors);
     const setShowVectors = useEditorStore(s => s.setShowVelocityVectors);
-    const gravity        = useEditorStore(s => s.gravity);
-    const setGravity     = useEditorStore(s => s.setGravity);
 
     useEffect(() => {
         const update = () => { setCanUndo(commandManager.canUndo()); setCanRedo(commandManager.canRedo()); };
@@ -96,16 +95,16 @@ export default function Toolbar({ physicsApi, running, setRunning }) {
             </div>
 
             <div className="toolbar-group">
-                <label className="button" title="Load from local file" style={{ cursor: 'pointer', gap: 5 }}>
+                <label className="button stb-icon-btn" title="Load from local file" style={{ cursor: 'pointer' }}>
                     <OpenIcon />
-                    <span style={{ fontSize: 11 }}>Load Local</span>
+                    <span className="stb-icon-btn-text">Load Local</span>
                     <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
                 </label>
-                <button onClick={handleExport} title="Save to local file" style={{ gap: 5 }}>
+                <button className="stb-icon-btn" onClick={handleExport} title="Save to local file">
                     <SaveIcon />
-                    <span style={{ fontSize: 11 }}>Save Local</span>
+                    <span className="stb-icon-btn-text">Save Local</span>
                 </button>
-                <button onClick={handleRemove} title="Remove Scene" style={{ color: '#f87171' }}><TrashIcon /></button>
+                <button className="stb-danger" onClick={handleRemove} title="Remove Scene"><TrashIcon /></button>
             </div>
 
             {hasCollisions && !running && (
@@ -114,24 +113,24 @@ export default function Toolbar({ physicsApi, running, setRunning }) {
                 </div>
             )}
 
-            <div className="toolbar-group" style={{ marginLeft: 'auto', gap: 16 }}>
+            <div className={`toolbar-group stb-right-group`}>
                 <button
+                    className={`stb-icon-btn${showVectors ? ' stb-vectors-btn--active' : ''}`}
                     onClick={() => setShowVectors(!showVectors)}
                     title="Show velocity vectors for all dynamic bodies"
-                    style={{ gap: 5, color: showVectors ? 'var(--green)' : undefined, background: showVectors ? 'var(--green-dim)' : undefined }}
                 >
                     <VectorsIcon />
-                    <span style={{ fontSize: 11 }}>Vectors</span>
+                    <span className="stb-icon-btn-text">Vectors</span>
                 </button>
 
-                <button id="step-btn" onClick={handleStep} disabled={running} title="Step one physics tick (paused only)" style={{ gap: 5 }}>
+                <button id="step-btn" className="stb-icon-btn" onClick={handleStep} disabled={running} title="Step one physics tick (paused only)">
                     <StepIcon />
-                    <span style={{ fontSize: 11 }}>Step</span>
+                    <span className="stb-icon-btn-text">Step</span>
                 </button>
 
-                <button id="reset-btn" onClick={handleReset} title="Reset simulation to original state" style={{ gap: 5, color: '#f87171' }}>
+                <button id="reset-btn" className="stb-icon-btn stb-danger" onClick={handleReset} title="Reset simulation to original state">
                     <ResetIcon />
-                    <span style={{ fontSize: 11 }}>Reset</span>
+                    <span className="stb-icon-btn-text">Reset</span>
                 </button>
 
                 <button

@@ -1,0 +1,21 @@
+.stb-icon-btn {
+  gap: 5px;
+}
+
+.stb-icon-btn-text {
+  font-size: 11px;
+}
+
+.stb-danger {
+  color: #f87171;
+}
+
+.stb-right-group {
+  margin-left: auto;
+  gap: 16px;
+}
+
+.stb-vectors-btn--active {
+  color: var(--green);
+  background: var(--green-dim);
+}

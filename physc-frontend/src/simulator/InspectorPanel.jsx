@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { commandManager, ModifyPropertyCommand, TranslateGroupCommand } from '../commands/CommandManager';
 import { SliderRow, Section, ReadRow } from '../components/SliderRow';
+import './InspectorPanel.css';
 
 const fmt = (v, d = 3) => (typeof v === 'number' ? v.toFixed(d) : (v ?? ''));
 
@@ -39,7 +40,7 @@ export default function InspectorPanel({ physicsApi }) {
                 <div className="panel-header"><h3>Inspector</h3></div>
                 <div className="inspector-empty-state">
                     <div className="inspector-empty-icon">✦</div>
-                    <p style={{ margin: 0 }}>Select a body or constraint in the Scene Graph to inspect its properties.</p>
+                    <p className="ip-empty-msg">Select a body or constraint in the Scene Graph to inspect its properties.</p>
                 </div>
             </div>
         );
@@ -57,17 +58,15 @@ export default function InspectorPanel({ physicsApi }) {
         const bodyTypeColor =
             selectedBody.type === 0 ? 'var(--text-secondary)' :
             selectedBody.type === 1 ? 'var(--teal)' : 'var(--orange)';
+        const bodyTypeBg =
+            selectedBody.type === 0 ? 'rgba(100,116,139,0.15)' :
+            selectedBody.type === 1 ? 'var(--teal-dim)' : 'var(--orange-dim)';
 
         return (
             <div className="inspector-panel">
                 <div className="panel-header">
                     <h3>Inspector</h3>
-                    <span style={{
-                        fontSize: '10px', fontWeight: 600, padding: '2px 7px', borderRadius: 4,
-                        background: selectedBody.type === 0 ? 'rgba(100,116,139,0.15)' :
-                                    selectedBody.type === 1 ? 'var(--teal-dim)' : 'var(--orange-dim)',
-                        color: bodyTypeColor,
-                    }}>
+                    <span className="ip-type-badge" style={{ background: bodyTypeBg, color: bodyTypeColor }}>
                         {bodyTypeName}
                     </span>
                 </div>
@@ -97,11 +96,7 @@ export default function InspectorPanel({ physicsApi }) {
 
                     <Section title="Transform" badge="LIVE" />
                     {running && (
-                        <div style={{
-                            fontSize: '10px', color: '#f87171', padding: '4px 6px',
-                            background: 'rgba(248,113,113,0.08)', borderRadius: 4,
-                            border: '1px solid rgba(248,113,113,0.2)', marginBottom: 6,
-                        }}>
+                        <div className="ip-sim-warning">
                             ⚠ Pause the simulation to edit transform properties.
                         </div>
                     )}
@@ -122,24 +117,22 @@ export default function InspectorPanel({ physicsApi }) {
                     {selectedBody.shape === 'Circle' && (
                         <SliderRow label="Radius" liveValue={selectedBody.radius} min={1} max={300} step={1} unit="px" readOnly />
                     )}
-                    <div style={{ fontSize: '10px', color: 'var(--text-disabled)', padding: '2px 0 4px', fontStyle: 'italic' }}>
+                    <div className="ip-shape-note">
                         Shape dimensions are fixed after creation.
                     </div>
 
                     <Section title="Velocity" badge="LIVE" />
                     {(() => {
-                        
-                        
                         const isDynamic = selectedBody.type === 2
                             || (selectedBody.type == null && !selectedBody.isStatic);
                         return !isDynamic;
                     })() ? (
-                        <div style={{ fontSize: '10px', color: 'var(--text-disabled)', padding: '4px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)', marginBottom: 4 }}>
+                        <div className="ip-vel-na">
                             Velocity is only applicable to Dynamic bodies.
                         </div>
                     ) : (
                         <>
-                            <div style={{ fontSize: '10px', color: 'var(--blue)', padding: '4px 6px', background: 'var(--blue-dim)', borderRadius: 4, border: '1px solid rgba(96,165,250,0.2)', marginBottom: 6 }}>
+                            <div className="ip-vel-info">
                                 ℹ Vx / Vy inject a velocity impulse each frame — visible on free bodies, dampened by constraints. Pause the simulation to set ω (spin).
                             </div>
                             <SliderRow label="Vx" liveValue={liveVx} min={-2000} max={2000} step={1} unit="px/s" onCommit={v => commit('vx', liveVx, v)} />
@@ -166,12 +159,12 @@ export default function InspectorPanel({ physicsApi }) {
                             ? "A Static Block has infinite mass and never moves. It acts as an immovable wall, platform, or structural member. Perfect for environment geometry."
                             : "A Block is a rectangular rigid body. It slides, tilts, and collides realistically. Adjust density for mass, friction for grip, and restitution to control how bouncy collisions are.";
                         return (
-                            <div style={{ marginTop: 20, padding: '12px', background: 'var(--bg-active)', borderRadius: 8, border: '1px solid var(--border-subtle)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div className="ip-desc-card">
+                                <div className="ip-desc-header">
                                     <span>{label}</span>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 400 }}>ID: {selectedNodeId}</span>
+                                    <span className="ip-desc-id">ID: {selectedNodeId}</span>
                                 </div>
-                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{desc}</div>
+                                <div className="ip-desc-text">{desc}</div>
                             </div>
                         );
                     })()}
@@ -204,7 +197,7 @@ export default function InspectorPanel({ physicsApi }) {
             <div className="inspector-panel">
                 <div className="panel-header">
                     <h3>Inspector</h3>
-                    <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'var(--bg-surface)', color: typeColor, border: `1px solid ${typeColor}44` }}>
+                    <span className="ip-constraint-badge" style={{ color: typeColor, border: `1px solid ${typeColor}44` }}>
                         {sc.type}
                     </span>
                 </div>
@@ -218,7 +211,7 @@ export default function InspectorPanel({ physicsApi }) {
                         <Section title="Pivot (World)" />
                         <ReadRow label="Anchor X" value={sc.anchorX?.toFixed(1)} unit="px" />
                         <ReadRow label="Anchor Y" value={sc.anchorY?.toFixed(1)} unit="px" />
-                        <div style={{ fontSize: '10px', color: 'var(--text-disabled)', padding: '2px 6px 6px', lineHeight: 1.5 }}>
+                        <div className="ip-anchor-note">
                             Move the connected body to reposition the pivot.
                         </div>
                     </>}
@@ -245,12 +238,12 @@ export default function InspectorPanel({ physicsApi }) {
                         <SliderRow label="Max Torque" liveValue={sc.maxTorque}   min={-200} max={200} step={0.5}           onCommit={v => commitC('maxTorque',   sc.maxTorque,   v)} />
                     </>}
 
-                    <div style={{ marginTop: 20, padding: '12px', background: 'var(--bg-active)', borderRadius: 8, border: '1px solid var(--border-subtle)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div className="ip-desc-card">
+                        <div className="ip-desc-header">
                             <span>{sc.type} Constraint</span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 400 }}>ID: {sc.id}</span>
+                            <span className="ip-desc-id">ID: {sc.id}</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        <div className="ip-desc-text">
                             {sc.type === 'Hinge'    && "A Hinge constraint restricts relative translation between two bodies, keeping their anchor points pinned together while allowing them to rotate freely around the pivot axis. Higher compliance makes the hinge elastic."}
                             {sc.type === 'Distance' && "A Distance constraint (or Spring) links two points on two bodies, pushing or pulling them to maintain a specific rest length. Adjusting compliance turns it from a rigid rod into a bouncy spring."}
                             {sc.type === 'Motor'    && "A Motor constraint applies a continuous rotational torque to drive a body at a target angular velocity. It simulates a powered axle, rotating the connected body up to the specified maximum torque."}

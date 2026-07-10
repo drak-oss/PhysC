@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import { useAuth } from '../auth/AuthContext';
 import { PhysCLogo } from '../components/PhysCLogo';
+import './LoginPage.css';
 
 export default function LoginPage() {
   const { login, isAuthenticated, loading } = useAuth();
@@ -32,20 +33,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.logoWrap}>
+    <div className="lp-page">
+      <div className="lp-card">
+        <div className="lp-logo-wrap">
           <PhysCLogo size={36} />
-          <span style={styles.logoText}>PhysC</span>
+          <span className="lp-logo-text">PhysC</span>
         </div>
 
-        <h1 style={styles.title}>Welcome back</h1>
-        <p style={styles.subtitle}>Sign in to your account</p>
+        <h1 className="lp-title">Welcome back</h1>
+        <p className="lp-subtitle">Sign in to your account</p>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
+        {error && <div className="lp-error">{error}</div>}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
+        <form onSubmit={handleSubmit} className="lp-form">
+          <label className="lp-label">
             Username
             <input
               name="username"
@@ -53,11 +54,11 @@ export default function LoginPage() {
               onChange={handleChange}
               autoComplete="username"
               required
-              style={styles.input}
+              className="lp-input"
             />
           </label>
 
-          <label style={styles.label}>
+          <label className="lp-label">
             Password
             <input
               name="password"
@@ -66,117 +67,20 @@ export default function LoginPage() {
               onChange={handleChange}
               autoComplete="current-password"
               required
-              style={styles.input}
+              className="lp-input"
             />
           </label>
 
-          <button type="submit" disabled={busy} style={styles.btn}>
+          <button type="submit" disabled={busy} className="lp-btn">
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
-        <p style={styles.footer}>
+        <p className="lp-footer">
           Don't have an account?{' '}
-          <Link to="/signup" style={styles.link}>Sign up</Link>
+          <Link to="/signup" className="lp-link">Sign up</Link>
         </p>
       </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#0a0a0a',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '24px',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '400px',
-    background: '#141414',
-    border: '1px solid #252525',
-    borderRadius: '16px',
-    padding: '40px',
-  },
-  logoWrap: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '28px',
-  },
-  logoText: {
-    fontSize: '20px',
-    fontWeight: 700,
-    color: '#fff',
-    letterSpacing: '0.02em',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: 700,
-    color: '#fff',
-    margin: '0 0 6px',
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#666',
-    margin: '0 0 28px',
-  },
-  errorBox: {
-    background: '#2a1010',
-    border: '1px solid #5c1c1c',
-    borderRadius: '8px',
-    color: '#f87171',
-    fontSize: '13px',
-    padding: '10px 14px',
-    marginBottom: '20px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '18px',
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    fontSize: '13px',
-    color: '#aaa',
-  },
-  input: {
-    background: '#1e1e1e',
-    border: '1px solid #2e2e2e',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '14px',
-    padding: '10px 12px',
-    outline: 'none',
-    transition: 'border-color 0.15s',
-  },
-  btn: {
-    marginTop: '8px',
-    background: '#7c3aed',
-    border: 'none',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '14px',
-    fontWeight: 600,
-    padding: '12px',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-  },
-  footer: {
-    textAlign: 'center',
-    fontSize: '13px',
-    color: '#666',
-    marginTop: '24px',
-    marginBottom: 0,
-  },
-  link: {
-    color: '#a78bfa',
-    textDecoration: 'none',
-    fontWeight: 500,
-  },
-};

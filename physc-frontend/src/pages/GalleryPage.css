@@ -1,0 +1,262 @@
+.gp-page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.gp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid #1e1e1e;
+  position: sticky;
+  top: 0;
+  background: #0a0a0a;
+  z-index: 10;
+}
+
+.gp-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.gp-nav-logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.gp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.gp-nav-link {
+  color: #888;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.gp-nav-btn {
+  background: #7c3aed;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  line-height: 1;
+}
+
+.gp-hero {
+  text-align: center;
+  padding: 60px 24px 40px;
+}
+
+.gp-hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 10px;
+}
+
+.gp-hero-sub {
+  font-size: 15px;
+  color: #666;
+  margin: 0 0 32px;
+}
+
+.gp-search-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.gp-search-input {
+  width: 100%;
+  max-width: 480px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  padding: 12px 16px;
+  outline: none;
+}
+
+.gp-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+
+.gp-error {
+  color: #f87171;
+  text-align: center;
+  padding: 20px;
+}
+
+.gp-empty {
+  color: #555;
+  text-align: center;
+  padding: 60px;
+}
+
+.gp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.gp-card-wrap {
+  position: relative;
+}
+
+.gp-card {
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.gp-thumb {
+  height: 160px;
+  background: #0d0d0d;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.gp-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gp-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  font-size: 13px;
+}
+
+.gp-card-body {
+  padding: 16px;
+}
+
+.gp-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.gp-card-desc {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.gp-card-meta {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.gp-card-owner {
+  color: #7c6aad;
+}
+
+.gp-card-forked {
+  color: #555;
+}
+
+.gp-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-tooltip {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.08);
+  backdrop-filter: blur(18px) brightness(0.55);
+  -webkit-backdrop-filter: blur(18px) brightness(0.55);
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 16px;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.gp-tooltip-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.gp-tooltip-desc {
+  font-size: 13px;
+  color: rgba(220, 210, 255, 0.92);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.gp-tooltip-meta {
+  font-size: 11px;
+  color: rgba(167, 139, 250, 0.7);
+}
+
+.gp-btn-open {
+  flex: 1;
+  background: #1e1e1e;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 13px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.gp-btn-fork {
+  flex: 1;
+  background: #2d1f5e;
+  border: 1px solid #4c3a8a;
+  border-radius: 6px;
+  color: #a78bfa;
+  font-size: 13px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.gp-btn-fork--forking {
+  opacity: 0.6;
+}
+
+.gp-btn-fork--forked {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+}

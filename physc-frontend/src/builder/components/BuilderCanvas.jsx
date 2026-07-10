@@ -7,6 +7,7 @@ import {
   drawConstraintScreenSpace,
 } from '../canvas/builderDraw';
 import { useBuilderInput } from '../canvas/useBuilderInput';
+import './BuilderCanvas.css';
 
 export default function BuilderCanvas() {
   const canvasRef     = useRef(null);
@@ -213,10 +214,11 @@ export default function BuilderCanvas() {
   });
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+    <div className="bc-wrap">
       <canvas
         ref={canvasRef}
-        style={{ display: 'block', width: '100%', height: '100%', cursor }}
+        className="bc-canvas"
+        style={{ cursor }}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}

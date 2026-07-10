@@ -1,0 +1,9 @@
+.hp-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.hp-constraint-type {
+  font-weight: 600;
+}

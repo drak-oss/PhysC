@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { BoxIcon, CircleIcon, LinkIcon, VecIcon } from '../components/icons/HierarchyIcons';
+import './HierarchyPanel.css';
 
 const BODY_TYPE_LABELS  = ['Static', 'Kinematic', 'Dynamic'];
 const BODY_TYPE_CLASSES = ['static', 'kinematic', 'dynamic'];
@@ -23,7 +24,7 @@ export default function HierarchyPanel() {
     const toggleBodyVector  = useEditorStore(s => s.toggleBodyVector);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="hp-root">
             <div className="panel-header">
                 <h3>Scene Graph</h3>
             </div>
@@ -95,7 +96,7 @@ export default function HierarchyPanel() {
                                         <LinkIcon />
                                     </span>
                                     <span className="hierarchy-item-label">
-                                        <span style={{ color: accentColor, fontWeight: 600 }}>{c.type}</span>
+                                        <span className="hp-constraint-type" style={{ color: accentColor }}>{c.type}</span>
                                         &nbsp;{bodyAName} ↔ {bodyBName}
                                     </span>
                                 </li>

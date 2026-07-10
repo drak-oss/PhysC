@@ -1,4 +1,5 @@
 import React from 'react';
+import './PropControls.css';
 
 export function NumInput({ propDef, value, onChange }) {
   return (
@@ -12,32 +13,22 @@ export function NumInput({ propDef, value, onChange }) {
         const v = e.target.value === '' ? null : parseFloat(e.target.value);
         onChange(isNaN(v) ? 0 : v);
       }}
-      style={{
-        background: 'var(--bg-void)',
-        border: '1px solid var(--border-mid)',
-        borderRadius: 'var(--radius-sm)',
-        color: 'var(--text-primary)',
-        padding: '5px 8px',
-        fontSize: '11.5px',
-        fontFamily: "'JetBrains Mono', monospace",
-        width: '100%',
-        outline: 'none',
-      }}
+      className="pc-num-input"
     />
   );
 }
 
 export function SliderInput({ propDef, value, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="pc-slider-wrap">
       <input
         type="range"
         min={propDef.min} max={propDef.max} step={propDef.step ?? 0.01}
         value={value ?? 0}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ flex: 1, accentColor: 'var(--accent)', height: 4 }}
+        className="pc-slider"
       />
-      <span style={{ width: 36, textAlign: 'right', fontSize: '11px', fontFamily: "'JetBrains Mono',monospace", color: 'var(--text-secondary)', flexShrink: 0 }}>
+      <span className="pc-slider-val">
         {(value ?? 0).toFixed(2)}
       </span>
     </div>
@@ -50,7 +41,7 @@ export function CheckboxInput({ value, onChange }) {
       type="checkbox"
       checked={!!value}
       onChange={e => onChange(e.target.checked)}
-      style={{ accentColor: 'var(--accent)', cursor: 'pointer', width: 16, height: 16 }}
+      className="pc-checkbox"
     />
   );
 }
@@ -60,16 +51,7 @@ export function SelectInput({ propDef, value, onChange }) {
     <select
       value={value ?? propDef.options[0]}
       onChange={e => onChange(e.target.value)}
-      style={{
-        background: 'var(--bg-void)',
-        border: '1px solid var(--border-mid)',
-        borderRadius: 'var(--radius-sm)',
-        color: 'var(--text-primary)',
-        padding: '4px 6px',
-        fontSize: '11.5px',
-        width: '100%',
-        outline: 'none',
-      }}
+      className="pc-select"
     >
       {propDef.options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
@@ -78,17 +60,17 @@ export function SelectInput({ propDef, value, onChange }) {
 
 export function PropRow({ propDef, value, onChange }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-      <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+    <div className="pc-prop-row">
+      <label className="pc-prop-label">
         <span>{propDef.label}</span>
-        {propDef.unit && <span style={{ color: 'var(--text-disabled)', fontWeight: 400 }}>{propDef.unit}</span>}
+        {propDef.unit && <span className="pc-prop-unit">{propDef.unit}</span>}
       </label>
       {propDef.type === 'slider'  ? <SliderInput  propDef={propDef} value={value} onChange={onChange} />
        : propDef.type === 'boolean' ? <CheckboxInput value={value} onChange={onChange} />
        : propDef.type === 'select'  ? <SelectInput  propDef={propDef} value={value} onChange={onChange} />
        : <NumInput propDef={propDef} value={value} onChange={onChange} />}
       {propDef.description && (
-        <div style={{ fontSize: '9px', color: 'var(--text-disabled)', marginTop: 1, lineHeight: 1.4 }}>{propDef.description}</div>
+        <div className="pc-prop-desc">{propDef.description}</div>
       )}
     </div>
   );
@@ -96,7 +78,7 @@ export function PropRow({ propDef, value, onChange }) {
 
 export function SectionLabel({ children }) {
   return (
-    <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: 'var(--text-disabled)', textTransform: 'uppercase', marginBottom: 8, marginTop: 14, paddingBottom: 4, borderBottom: '1px solid var(--border-subtle)' }}>
+    <div className="pc-section-label">
       {children}
     </div>
   );

@@ -1,0 +1,12 @@
+.rp-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.rp-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

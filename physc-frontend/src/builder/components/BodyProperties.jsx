@@ -2,6 +2,7 @@ import React from 'react';
 import { useBuilderStore } from '../builderStore';
 import { getBodyDef } from '../componentRegistry';
 import { PropRow, SectionLabel } from './PropControls';
+import './BodyProperties.css';
 
 export default function BodyProperties({ body }) {
   const updateBody      = useBuilderStore(s => s.updateBody);
@@ -16,58 +17,58 @@ export default function BodyProperties({ body }) {
 
   return (
     <div className="custom-scroll" style={{ overflow: 'hidden auto', flex: 1 }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, position: 'sticky', top: 0, background: 'var(--bg-panel)', zIndex: 2 }}>
+      <div className="bprop-header">
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{body.name}</div>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 2 }}>
+          <div className="bprop-name">{body.name}</div>
+          <div className="bprop-subtype">
             {def.isStatic ? '🔒 Static' : '⚡ Dynamic'} · {def.label}
           </div>
         </div>
         <button
           onClick={() => { removeBody(body.id); clearSelected(); }}
           title="Delete"
-          style={{ background: 'var(--red-dim)', border: '1px solid rgba(248,113,113,0.3)', color: 'var(--red)', padding: '4px 9px', borderRadius: 4, cursor: 'pointer', fontSize: '10px', fontWeight: 700 }}
+          className="bprop-delete"
         >
           ✕ Delete
         </button>
       </div>
 
-      <div style={{ padding: '0 16px 16px' }}>
+      <div className="bprop-content">
         <SectionLabel>Identity</SectionLabel>
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Name</label>
+        <div className="bprop-mb">
+          <label className="bprop-field-label">Name</label>
           <input
             value={body.name}
             onChange={e => updateBody(body.id, { name: e.target.value })}
-            style={{ background: 'var(--bg-void)', border: '1px solid var(--border-mid)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', padding: '5px 8px', fontSize: '11.5px', width: '100%', outline: 'none', fontFamily: 'Inter,sans-serif' }}
+            className="bprop-input"
           />
         </div>
 
         <SectionLabel>Transform</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+        <div className="bprop-grid-2">
           {['x', 'y'].map(k => (
             <div key={k}>
-              <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
-                {k.toUpperCase()} <span style={{ color: 'var(--text-disabled)', fontWeight: 400 }}>px</span>
+              <label className="bprop-field-label">
+                {k.toUpperCase()} <span className="bprop-field-unit">px</span>
               </label>
               <input type="number" value={Math.round(body[k])} step={1}
                 onChange={e => setTop(k)(parseFloat(e.target.value) || 0)}
-                style={{ background: 'var(--bg-void)', border: '1px solid var(--border-mid)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', padding: '5px 8px', fontSize: '11.5px', width: '100%', outline: 'none', fontFamily: "'JetBrains Mono',monospace" }} />
+                className="bprop-input bprop-input--mono" />
             </div>
           ))}
         </div>
         {(body.type === 'block' || body.type === 'disk') && (
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div className="bprop-mb">
+            <label className="bprop-field-label--flex">
               <span>Rotation</span>
-              <span style={{ color: 'var(--text-disabled)', fontWeight: 400 }}>°</span>
+              <span className="bprop-field-unit">°</span>
             </label>
             <input
               type="number"
               value={parseFloat(((body.rotation ?? 0) * 180 / Math.PI).toFixed(1))}
               step={1}
               onChange={e => setTop('rotation')((parseFloat(e.target.value) || 0) * Math.PI / 180)}
-              style={{ background: 'var(--bg-void)', border: '1px solid var(--border-mid)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', padding: '5px 8px', fontSize: '11.5px', width: '100%', outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
+              className="bprop-input bprop-input--mono"
             />
           </div>
         )}

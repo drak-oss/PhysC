@@ -2,6 +2,7 @@ import React from 'react';
 import { useBuilderStore } from '../builderStore';
 import { CONSTRAINT_COMPONENTS } from '../componentRegistry';
 import { PropRow, SectionLabel } from './PropControls';
+import './ConstraintProperties.css';
 
 const CTYPE_COLORS = {
   spring: '#818cf8', rod: '#94a3b8', motor: '#4ade80',
@@ -13,12 +14,14 @@ export function ConstraintBadge({ type }) {
   const def   = CONSTRAINT_COMPONENTS[type?.toLowerCase()];
   const init  = def?.label?.[0] ?? '?';
   return (
-    <span style={{
-      width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-      background: `${color}22`, border: `1.5px solid ${color}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color, fontSize: 10, fontWeight: 800, lineHeight: 1,
-    }}>{init}</span>
+    <span
+      className="cprop-badge"
+      style={{
+        background: `${color}22`,
+        border: `1.5px solid ${color}`,
+        color,
+      }}
+    >{init}</span>
   );
 }
 
@@ -27,19 +30,19 @@ function ConstraintInspector({ constraint, bodies, def }) {
   const bodyB = bodies.find(b => b.id === constraint.steps?.[1]?.bodyId);
 
   return (
-    <div style={{ background: 'var(--bg-void)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 'var(--radius)', padding: '10px 12px', marginTop: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+    <div className="cprop-inspector">
+      <div className="cprop-inspector-header">
         <span style={{ fontSize: 14 }}>✅</span>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#34d399' }}>{def.label} Constraint</div>
-          <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: 1 }}>Connected correctly</div>
+          <div className="cprop-connected-label">{def.label} Constraint</div>
+          <div className="cprop-connected-sub">Connected correctly</div>
         </div>
       </div>
       {[['Body A', bodyA, constraint.bodyA], ['Body B', bodyB, constraint.bodyB]].map(([label, body, id]) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 4, padding: '4px 6px', background: 'var(--bg-surface)', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>{label}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-primary)', marginTop: 1 }}>{body ? body.name : (id ? 'Pin' : 'None')}</div>
+        <div key={label} className="cprop-body-row">
+          <div className="cprop-body-info">
+            <div className="cprop-body-label">{label}</div>
+            <div className="cprop-body-name">{body ? body.name : (id ? 'Pin' : 'None')}</div>
           </div>
         </div>
       ))}
@@ -77,21 +80,21 @@ export default function ConstraintProperties({ constraint }) {
 
   return (
     <div className="custom-scroll" style={{ overflow: 'hidden auto', flex: 1 }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, position: 'sticky', top: 0, background: 'var(--bg-panel)', zIndex: 2 }}>
+      <div className="cprop-header">
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>{def.label}</div>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 2 }}>Constraint</div>
+          <div className="cprop-name">{def.label}</div>
+          <div className="cprop-subtype">Constraint</div>
         </div>
         <button
           onClick={() => { removeConstraint(constraint.id); clearSelected(); }}
           title="Delete"
-          style={{ background: 'var(--red-dim)', border: '1px solid rgba(248,113,113,0.3)', color: 'var(--red)', padding: '4px 9px', borderRadius: 4, cursor: 'pointer', fontSize: '10px', fontWeight: 700 }}
+          className="cprop-delete"
         >
           ✕ Delete
         </button>
       </div>
 
-      <div style={{ padding: '0 16px 16px' }}>
+      <div className="cprop-content">
         <SectionLabel>Inspector</SectionLabel>
         <ConstraintInspector constraint={constraint} bodies={bodies} def={def} />
 

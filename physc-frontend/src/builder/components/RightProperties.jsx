@@ -4,6 +4,7 @@ import { getBodyDef, CONSTRAINT_COMPONENTS, ALL_COMPONENTS } from '../componentR
 import BodyProperties from './BodyProperties';
 import ConstraintProperties from './ConstraintProperties';
 import EmptyProperties from './EmptyProperties';
+import './RightProperties.css';
 
 export default function RightProperties() {
   const selectedId   = useBuilderStore(s => s.selectedId);
@@ -23,9 +24,9 @@ export default function RightProperties() {
   const footerDesc    = bodyDef?.details || constraintDef?.description || toolDef?.description || null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="rp-root">
       <div className="panel-header"><h3>Properties</h3></div>
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="rp-body">
         {body
           ? <BodyProperties body={body} />
           : constraint

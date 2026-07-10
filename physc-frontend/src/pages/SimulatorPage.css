@@ -1,0 +1,233 @@
+.simp-logo-clickable {
+  cursor: pointer;
+}
+
+.simp-nav-btn {
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.simp-nav-btn-text {
+  font-size: 11px;
+}
+
+.simp-save-wrap {
+  position: relative;
+}
+
+.simp-save-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius);
+  padding: 16px;
+  width: 260px;
+  z-index: 200;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+}
+
+.simp-save-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.simp-save-panel-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.simp-save-panel-label--mb {
+  margin-bottom: 12px;
+}
+
+.simp-save-panel-input {
+  background: var(--bg-void);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  font-size: 12px;
+  outline: none;
+}
+
+.simp-visibility-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.simp-vis-btn {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.simp-vis-btn--private {
+  background: var(--bg-active);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-light);
+}
+
+.simp-vis-btn--private-off {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-disabled);
+}
+
+.simp-vis-btn--public {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+}
+
+.simp-vis-btn--public-off {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-disabled);
+}
+
+.simp-save-msg {
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.simp-save-msg--ok {
+  color: #4ade80;
+}
+
+.simp-save-msg--err {
+  color: #f87171;
+}
+
+.simp-save-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.simp-save-btn {
+  flex: 1;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.simp-save-btn--saving {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.simp-cancel-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.simp-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 0 16px;
+}
+
+.simp-gravity-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.simp-gravity-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.simp-gravity-slider {
+  width: 80px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.simp-gravity-val {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-secondary);
+  min-width: 30px;
+  user-select: none;
+}
+
+.simp-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-mid);
+  flex-shrink: 0;
+}
+
+.simp-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.simp-title-arrow {
+  font-size: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.simp-title-text {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-primary);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.simp-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.simp-back-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  color: var(--text-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.4px;
+}

@@ -10,6 +10,7 @@ import {
     drawBuilderOverlay,
     drawHUD,
 } from './canvas/simDraw';
+import './SimulationCanvas.css';
 
 const BODY_STRIDE = 10;
 
@@ -157,7 +158,6 @@ const SimulationCanvas = ({ api, running, builderMode = 'select' }) => {
         api.requestRenderData();
     }, [api]);
 
-    
     useEffect(() => {
         if (!ready) return;
 
@@ -221,10 +221,6 @@ const SimulationCanvas = ({ api, running, builderMode = 'select' }) => {
             if (running && sceneSetupDone) {
                 accumulator += Math.min(frameTime, 0.1);
                 while (accumulator >= fixedDt) {
-                    
-                    
-                    
-                    
                     const g = gravityRef.current;
                     if (g !== 1.0) {
                         const rd = api.getLatestRenderData();
@@ -263,7 +259,7 @@ const SimulationCanvas = ({ api, running, builderMode = 'select' }) => {
         : 'cell';
 
     return (
-        <div className="canvas-wrapper" style={{ position: 'relative' }}>
+        <div className="canvas-wrapper">
             <canvas
                 ref={canvasRef}
                 width={1200}
@@ -273,7 +269,7 @@ const SimulationCanvas = ({ api, running, builderMode = 'select' }) => {
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
                 title={activeTool === 'select' ? 'Click a body to select it' : 'Click to place — hover near bodies to snap'}
-                style={{ width: '100%', height: '100%', display: 'block', background: 'var(--bg-canvas)', cursor: cursorStyle }}
+                style={{ cursor: cursorStyle }}
             />
         </div>
     );

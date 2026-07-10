@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import './SliderRow.css';
 
 export function SliderRow({ label, liveValue, min, max, step = 0.01, precision, readOnly = false, onCommit, onFinalCommit, unit = '' }) {
     const numberRef = useRef(null);
@@ -28,7 +29,7 @@ export function SliderRow({ label, liveValue, min, max, step = 0.01, precision, 
     return (
         <div className="slider-row">
             <div className="slider-label-row">
-                <span className="slider-label" style={{ color: readOnly ? 'var(--text-disabled)' : 'var(--text-secondary)' }}>
+                <span className={`slider-label${readOnly ? ' slider-label--readonly' : ''}`}>
                     {label}
                 </span>
                 <div className="slider-number-wrap">
@@ -42,7 +43,6 @@ export function SliderRow({ label, liveValue, min, max, step = 0.01, precision, 
                         defaultValue={parseFloat(liveValue)?.toFixed(decimals) ?? '0'}
                         readOnly={readOnly}
                         disabled={readOnly}
-                        style={readOnly ? { color: 'var(--text-disabled)', cursor: 'default' } : {}}
                         onFocus={() => { focused.current = true; }}
                         onBlur={(e) => { focused.current = false; commit(e.target.value); finalCommit(e.target.value); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
@@ -84,11 +84,11 @@ export function Section({ title, badge, color }) {
 
 export function ReadRow({ label, value, unit = '' }) {
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{label}</span>
-            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-disabled)' }}>
+        <div className="sr-read-row">
+            <span className="sr-read-label">{label}</span>
+            <span className="sr-read-value">
                 {typeof value === 'number' ? value.toFixed(3) : value}
-                {unit && <span style={{ opacity: 0.5, marginLeft: 3 }}>{unit}</span>}
+                {unit && <span className="sr-read-unit">{unit}</span>}
             </span>
         </div>
     );
