@@ -4,6 +4,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden;        /* prevents page scroll when save panel input is focused */
     background: var(--bg-void);
 }
 
@@ -147,6 +148,18 @@
 .canvas-placeholder {
     color: var(--text-muted);
     font-size: 13px;
+}
+
+/* ── Responsive: wrap editor header to 2 rows at narrow widths ── */
+@media (max-width: 900px) {
+  .editor-header {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    padding: 6px 12px;
+    gap: 6px 8px;
+    align-items: center;
+  }
 }
 
 /* ── Responsive: shrink side panels as window narrows ── */

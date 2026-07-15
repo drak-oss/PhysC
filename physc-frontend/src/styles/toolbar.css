@@ -142,6 +142,13 @@ button:disabled {
     color: var(--accent-light);
 }
 
+/* ── Responsive: prevent toolbar from compressing when it scrolls in simp-actions ── */
+@media (max-width: 900px) {
+  .toolbar {
+    flex-shrink: 0;
+  }
+}
+
 /* Collision warning banner */
 .collision-warning {
     display: flex;

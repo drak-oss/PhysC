@@ -275,4 +275,4 @@ const SimulationCanvas = ({ api, running, builderMode = 'select' }) => {
     );
 };
 
-export default SimulationCanvas;
+export default React.memo(SimulationCanvas);
