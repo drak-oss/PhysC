@@ -19,3 +19,19 @@
   color: var(--green);
   background: var(--green-dim);
 }
+
+/* ── Responsive: drop button text labels as the window shrinks ── */
+@media (max-width: 960px) {
+  .stb-icon-btn-text {
+    display: none;
+  }
+  .stb-right-group {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 700px) {
+  .stb-right-group {
+    gap: 4px;
+  }
+}

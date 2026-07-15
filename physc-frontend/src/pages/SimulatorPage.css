@@ -230,4 +230,54 @@
   align-items: center;
   gap: 6px;
   letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Responsive: shrink and hide header elements as window narrows ── */
+
+/* At 1100px: shrink the gravity slider */
+@media (max-width: 1100px) {
+  .simp-gravity-slider {
+    width: 56px;
+  }
+  .simp-center {
+    gap: 10px;
+    padding: 0 8px;
+  }
+}
+
+/* At 900px: hide gravity label, shrink center further */
+@media (max-width: 900px) {
+  .simp-gravity-label {
+    display: none;
+  }
+  .simp-gravity-slider {
+    width: 50px;
+  }
+  .simp-title-text {
+    font-size: 10px;
+    letter-spacing: 0.6px;
+  }
+}
+
+/* At 780px: hide the machine title section */
+@media (max-width: 780px) {
+  .simp-title-wrap,
+  .simp-divider {
+    display: none;
+  }
+  .simp-center {
+    padding: 0 4px;
+  }
+}
+
+/* At 640px: hide the whole center gravity control */
+@media (max-width: 640px) {
+  .simp-center {
+    display: none;
+  }
+  .simp-nav-btn-text {
+    display: none;
+  }
 }

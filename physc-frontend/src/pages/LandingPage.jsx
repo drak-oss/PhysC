@@ -59,7 +59,7 @@ export default function LandingPage() {
           <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.5px', background: 'linear-gradient(135deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>PhysC</span>
         </button>
 
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="landing-nav-links" style={{ display: 'flex', gap: 6 }}>
           {NAV_LINKS.map(({ label, ref }) => (
             <button key={label} onClick={() => scrollTo(ref)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, padding: '6px 14px', borderRadius: 6, transition: 'all 0.15s ease' }}
@@ -69,8 +69,8 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <button onClick={() => navigate('/builder')}
-          style={{ background: 'linear-gradient(135deg, #7c6fef, #9d8ef5)', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 600, padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 12px rgba(124,111,239,0.4)', transition: 'all 0.2s ease' }}
+        <button className="landing-nav-cta" onClick={() => navigate('/builder')}
+          style={{ background: 'linear-gradient(135deg, #7c6fef, #9d8ef5)', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 600, padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 12px rgba(124,111,239,0.4)', transition: 'all 0.2s ease', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,111,239,0.55)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 12px rgba(124,111,239,0.4)'; }}
         >
@@ -142,7 +142,7 @@ export default function LandingPage() {
           {TECH_STACK.map((t) => <TechCard key={t.label} {...t} />)}
         </div>
 
-        <div style={{ marginTop: 48, padding: '40px 48px', background: 'rgba(124,111,239,0.05)', border: '1px solid rgba(124,111,239,0.18)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 48 }}>
+        <div className="landing-xpbd-row" style={{ marginTop: 48, padding: '40px 48px', background: 'rgba(124,111,239,0.05)', border: '1px solid rgba(124,111,239,0.18)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 48 }}>
           <div style={{ position: 'absolute', top: -30, right: -30, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(124,111,239,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 700, color: '#a78bfa' }}>Why XPBD?</h3>
@@ -163,7 +163,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <SectionLabel label="About" />
           <h2 style={sectionHeadingStyle}>A Playground For <GradientText>Understanding Physics</GradientText></h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, marginTop: 36 }}>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, fontSize: 15, margin: 0 }}>
               Whether you're studying rigid-body dynamics, building a demo, or just curious how a block-and-tackle pulley system actually works, PhysC lets you construct it, simulate it, and inspect every body and constraint in real time — all in the browser, no downloads required.
             </p>
@@ -184,12 +184,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer style={{ borderTop: '1px solid var(--border-subtle)', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)' }}>
+      <footer className="landing-footer" style={{ borderTop: '1px solid var(--border-subtle)', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: 'var(--bg-panel)', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <PhysCLogo />
           <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>PhysC Engine</span>
         </div>
-        <div style={{ display: 'flex', gap: 24 }}>
+        <div className="landing-footer-links" style={{ display: 'flex', gap: 24 }}>
           {NAV_LINKS.map(({ label, ref }) => (
             <button key={label} onClick={() => scrollTo(ref)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, fontWeight: 500, padding: 0, transition: 'color 0.15s' }}
@@ -205,6 +205,31 @@ export default function LandingPage() {
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Landing page responsive ── */
+
+        /* Hide nav links at tablet width, keep just logo + CTA */
+        @media (max-width: 768px) {
+          .landing-nav-links { display: none !important; }
+        }
+
+        /* Stack footer on mobile */
+        @media (max-width: 600px) {
+          .landing-footer { padding: 20px 16px !important; }
+          .landing-footer-links { display: none !important; }
+        }
+
+        /* XPBD section: stack text + diagram vertically */
+        @media (max-width: 700px) {
+          .landing-xpbd-row { flex-direction: column !important; }
+          .landing-xpbd-row > div:last-child { align-self: center; }
+        }
+
+        /* Section padding reduction on mobile */
+        @media (max-width: 600px) {
+          section { padding-left: 20px !important; padding-right: 20px !important; }
+          .landing-nav-cta span { display: none; }
         }
       `}</style>
     </div>
