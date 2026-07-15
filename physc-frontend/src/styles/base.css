@@ -43,7 +43,7 @@ body {
     font-size: 13px;
     background-color: var(--bg-void);
     color: var(--text-primary);
-    overflow: hidden;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }

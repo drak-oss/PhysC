@@ -13,9 +13,7 @@ import physc_backend.exception.UnauthorizedException;
 import physc_backend.repository.MachineRepository;
 import physc_backend.repository.UserRepository;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -97,10 +95,7 @@ public class MachineService {
         if (query == null || query.trim().length() < 2) {
             return List.of();
         }
-        String fulltextQuery = Arrays.stream(query.trim().split("\\s+"))
-            .map(word -> word + "*")
-            .collect(Collectors.joining(" "));
-        return machineRepository.searchPublicMachines(fulltextQuery)
+        return machineRepository.searchPublicMachines(query.trim())
             .stream()
             .map(MachineSummaryResponse::from)
             .toList();

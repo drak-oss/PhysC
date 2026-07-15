@@ -121,7 +121,7 @@ export default function GalleryPage() {
 function MachineCard({ machine, isAuthenticated, forking, forked, onOpen, onFork }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div className="gp-card-wrap" onMouseLeave={() => setHovered(false)}>
+    <div className="gp-card-wrap">
       {hovered && (machine.description || machine.name) && (
         <div className="gp-tooltip">
           <div className="gp-tooltip-name">{machine.name}</div>
@@ -130,22 +130,22 @@ function MachineCard({ machine, isAuthenticated, forking, forked, onOpen, onFork
         </div>
       )}
       <div className="gp-card">
-        <div className="gp-thumb" onClick={() => onOpen(machine)} onMouseEnter={() => setHovered(true)}>
+        <div className="gp-thumb" onClick={() => onOpen(machine)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
           {machine.thumbnail
             ? <img src={machine.thumbnail} alt={machine.name} className="gp-thumb-img" />
             : <div className="gp-thumb-placeholder">No preview</div>
           }
         </div>
         <div className="gp-card-body">
-          <div className="gp-card-name" onMouseEnter={() => setHovered(true)}>{machine.name}</div>
+          <div className="gp-card-name">{machine.name}</div>
           {machine.description && (
-            <div className="gp-card-desc" onMouseEnter={() => setHovered(true)}>{machine.description}</div>
+            <div className="gp-card-desc">{machine.description}</div>
           )}
-          <div className="gp-card-meta" onMouseEnter={() => setHovered(true)}>
+          <div className="gp-card-meta">
             by <span className="gp-card-owner">{machine.ownerUsername}</span>
             {machine.forkedFromId && <span className="gp-card-forked"> · forked</span>}
           </div>
-          <div className="gp-card-actions" onMouseEnter={e => { e.stopPropagation(); setHovered(false); }}>
+          <div className="gp-card-actions">
             <button className="gp-btn-open" onClick={() => onOpen(machine)}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="5 3 19 12 5 21 5 3"/>
