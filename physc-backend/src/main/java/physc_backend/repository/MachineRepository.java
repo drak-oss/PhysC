@@ -14,6 +14,6 @@ public interface MachineRepository extends JpaRepository<Machine, Long> {
     List<Machine> findAllByForkedFromId(Long forkedFromId);
     long countByUserIdAndIsPublicTrue(Long userId);
 
-    @Query(value = "SELECT * FROM machines WHERE is_public = 1 AND MATCH(name, description) AGAINST (:query IN BOOLEAN MODE)", nativeQuery = true)
+    @Query(value = "SELECT * FROM machines WHERE is_public = 1 AND (name LIKE CONCAT('%', :query, '%') OR description LIKE CONCAT('%', :query, '%'))", nativeQuery = true)
     List<Machine> searchPublicMachines(@Param("query") String query);
 }
