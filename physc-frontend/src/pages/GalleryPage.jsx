@@ -129,7 +129,7 @@ function MachineCard({ machine, isAuthenticated, forking, forked, onOpen, onFork
           <div className="gp-tooltip-meta">by {machine.ownerUsername}</div>
         </div>
       )}
-      <div className="gp-card">
+      <div className={`gp-card${hovered ? ' gp-card--hovered' : ''}`}>
         <div className="gp-thumb" onClick={() => onOpen(machine)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
           {machine.thumbnail
             ? <img src={machine.thumbnail} alt={machine.name} className="gp-thumb-img" />
