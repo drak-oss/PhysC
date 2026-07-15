@@ -15,8 +15,6 @@ physc-frontend/build/
 .env.local
 .env.*.local
 
-physc-backend/Dockerfile
-physc-backend/.dockerignore
 
 .idea/
 .claude/

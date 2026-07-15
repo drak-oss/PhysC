@@ -1,0 +1,662 @@
+# PhysC — 2D Physics Simulation Platform
+
+> A full-stack web application where users design mechanical systems in a visual builder and run them through a custom physics engine compiled to WebAssembly. The simulation runs entirely in the browser at 60 fps — no server-side computation, no plugins.
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [System Architecture](#2-system-architecture)
+3. [The Physics Engine (C++ → WebAssembly)](#3-the-physics-engine)
+   - 3.1 [Memory Model — Generational Pool](#31-memory-model--generational-pool)
+   - 3.2 [The Simulation Step Loop](#32-the-simulation-step-loop)
+   - 3.3 [XPBD Solver](#33-xpbd-solver)
+   - 3.4 [Constraints](#34-constraints)
+   - 3.5 [Broad-Phase — Dynamic AABB Tree](#35-broad-phase--dynamic-aabb-tree)
+   - 3.6 [Narrow-Phase — Contact Generation](#36-narrow-phase--contact-generation)
+4. [WebAssembly Bridge & Web Worker](#4-webassembly-bridge--web-worker)
+   - 4.1 [Zero-Copy Render Protocol](#41-zero-copy-render-protocol)
+   - 4.2 [Web Worker Message Bus](#42-web-worker-message-bus)
+5. [Frontend — React Application](#5-frontend--react-application)
+   - 5.1 [Global State with Zustand](#51-global-state-with-zustand)
+   - 5.2 [The Builder](#52-the-builder)
+   - 5.3 [The Simulator](#53-the-simulator)
+   - 5.4 [Undo/Redo — Command Pattern](#54-undoredo--command-pattern)
+   - 5.5 [CSS Architecture](#55-css-architecture)
+6. [Backend — Spring Boot REST API](#6-backend--spring-boot-rest-api)
+   - 6.1 [Database Schema](#61-database-schema)
+   - 6.2 [Authentication — JWT](#62-authentication--jwt)
+   - 6.3 [REST Endpoints](#63-rest-endpoints)
+7. [Running the Project](#7-running-the-project)
+8. [Interviewer Q&A](#8-interviewer-qa)
+
+---
+
+## 1. Project Overview
+
+PhysC has three modes:
+
+**Builder** — a canvas where you place rigid bodies (disks, blocks, static pins) and wire them together with constraints (hinges, springs, rods, motors, sliders, welds, pulleys, gears). You set per-body material properties — density, friction, restitution — and configure a per-body collision layer (A / B / C / None) so that only specific body groups collide with each other.
+
+**Simulator** — launches the physics engine on the scene you built. A 60 Hz animation loop ticks the XPBD solver, draws the result on a `<canvas>` element, and streams live body state (position, velocity) to the inspector panel. You can adjust gravity in real time, step one frame at a time while paused, or inject velocity impulses into any body without stopping the simulation.
+
+**Gallery** — authenticated users save their machines (name, description, public/private). Public machines are browsable and forkable by anyone. The full scene data is stored as JSON in MySQL.
+
+---
+
+## 2. System Architecture
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                    Browser (single tab)                    │
+│                                                           │
+│  ┌─────────────────────────┐  ┌────────────────────────┐ │
+│  │   Main Thread           │  │   Web Worker           │ │
+│  │   React 19 + Vite 8     │  │   physicsWorker.js     │ │
+│  │   Zustand store         │◄─┤   solver.wasm (C++)    │ │
+│  │   Canvas 2D rendering   │  │   XPBD solver          │ │
+│  │   Command Manager       │  │   Collision detection  │ │
+│  └─────────────────────────┘  └────────────────────────┘ │
+│             │ HTTPS / JWT                                  │
+└─────────────┼─────────────────────────────────────────────┘
+              │
+     ┌────────▼────────┐
+     │  Spring Boot 3  │
+     │  Java 21        │
+     │  JWT Auth       │
+     └────────┬────────┘
+              │ JPA / Hibernate
+     ┌────────▼────────┐
+     │   MySQL 8       │
+     │   users         │
+     │   machines      │
+     └─────────────────┘
+```
+
+The physics work is entirely client-side. The backend only handles user accounts and persisting machine JSON — it never runs any simulation itself.
+
+---
+
+## 3. The Physics Engine
+
+The engine is hand-written in C++ (no Box2D, no Bullet, no third-party physics library) and lives in `physc-frontend/engine/`. It is compiled to WebAssembly using Emscripten and loaded at runtime.
+
+```
+engine/
+├── core/
+│   ├── Handle.h          — Generational index (avoids dangling pointers)
+│   ├── Pool.h            — Object pool backed by Handle<T>
+│   └── Math.h            — Vec2, Mat22
+├── physics/
+│   ├── BodyManager.h/cpp — Rigid body state (position, velocity, mass, inertia)
+│   └── ShapeManager.h/cpp— Circle and Box shapes, mass/inertia computation
+├── collision/
+│   ├── DynamicTree.h/cpp — AABB broad-phase (self-balancing binary tree)
+│   ├── Narrowphase.h/cpp — Contact manifold generation (circle-circle, box-box, circle-box)
+│   ├── CollisionManager  — Ties broad and narrow phase together; ignore-pair filtering
+│   └── ContactConstraint — Contact resolved as an XPBD positional constraint
+├── constraints/
+│   ├── Constraint.h           — Abstract base (preSolve / solvePosition / solveVelocity)
+│   ├── HingeConstraint.h      — Pins two anchor points together, allows rotation
+│   ├── DistanceConstraint.h   — Maintains a rest length (rigid rod or spring via compliance)
+│   ├── MotorConstraint.h      — Drives a body at a target angular velocity
+│   ├── SliderConstraint.h     — Restricts motion to one linear axis
+│   ├── WeldConstraint.h       — Locks both translation and rotation between two bodies
+│   ├── PulleyConstraint.h     — Two-segment rope over a fixed pulley pair
+│   └── GearConstraint.h       — Couples two bodies' angular velocities at a ratio
+├── solver/
+│   └── XPBDSolver.h      — Runs preSolve → solvePositions (4 sub-steps) → solveVelocities
+└── wasm/
+    └── Bindings.cpp      — EMSCRIPTEN_BINDINGS — exposes SimulationAPI to JavaScript
+```
+
+### 3.1 Memory Model — Generational Pool
+
+Every body and shape is stored in a `Pool<T>`. Instead of raw pointers, everything is referenced by a `Handle<T>`:
+
+```cpp
+template<typename T>
+struct Handle {
+    uint32_t index;       // slot in the pool
+    uint32_t generation;  // incremented every time a slot is reused
+};
+```
+
+When a body is removed, its pool slot is recycled but the generation counter increments. Any old `Handle` that points to the recycled slot now has a stale generation and `pool.get(handle)` returns `nullptr` instead of corrupted data. This eliminates dangling pointer bugs without heap allocation overhead — every body is stored inline in a contiguous `std::vector<Slot>`.
+
+### 3.2 The Simulation Step Loop
+
+`World::step(dt, subSteps)` divides each frame's time delta into `subSteps` equal sub-steps (called with `subSteps = 20` from JS). For each sub-step:
+
+```
+1. Integrate forces → update velocity → predict new position (symplectic Euler)
+2. Broad-phase: update AABB tree, query overlapping pairs
+3. Narrow-phase: generate contact manifolds
+4. preSolve: reset Lagrange multiplier λ on every constraint
+5. solvePositions (×4 position iterations):
+     - solve all joint constraints
+     - solve all contact constraints
+6. Velocity correction (derive velocity from position delta):
+     velocity = (position_new − position_old) / subDt
+7. solveVelocities: friction and restitution impulses on contacts
+```
+
+The key insight of XPBD is that velocity is *derived* from position change (step 6) rather than being the primary state. Constraints only operate on positions — making them unconditionally stable regardless of time step size.
+
+### 3.3 XPBD Solver
+
+XPBD (Extended Position-Based Dynamics, Müller et al. 2020) is the alternative to traditional impulse-based solvers. The core formula for a single scalar constraint is:
+
+```
+ΔC = C(x) — the constraint violation
+w  = Σ (invMass + r × r * invInertia)   — generalized inverse mass
+α̃  = compliance / dt²                   — time-scaled compliance
+
+Δλ = (−C − α̃ · λ) / (w + α̃)
+ΔP = Δλ · ∇C                            — positional correction impulse
+```
+
+`λ` is the accumulated Lagrange multiplier, reset every sub-step (XPBD's "warm starting reset"). `compliance` is the physical softness of the constraint — 0.0 is perfectly rigid, higher values make it elastic. This means a spring and a rigid rod are the same code path, just different compliance values.
+
+**Why XPBD instead of impulse-based?**
+Impulse-based solvers (like Box2D) solve velocity corrections and can become unstable at large time steps or with many constraint cycles. XPBD works directly on positions, is unconditionally stable, and naturally handles compliance without extra springs. The trade-off is that XPBD needs multiple sub-steps to converge — hence the `subSteps = 20` call per frame.
+
+### 3.4 Constraints
+
+**HingeConstraint** — the constraint violation is the 2D vector `C = pA − pB` (the gap between the two anchor points in world space). The effective mass matrix is a 2×2 system:
+
+```cpp
+K.m00 = invMassA + invMassB + rA.y² * invInertiaA + rB.y² * invInertiaB;
+K.m11 = invMassA + invMassB + rA.x² * invInertiaA + rB.x² * invInertiaB;
+K.m01 = K.m10 = −rA.x*rA.y*invInertiaA − rB.x*rB.y*invInertiaB;
+```
+
+Adding `α̃` to the diagonal regularises it (prevents singularity for bodies with zero inverse mass) and gives compliance. `K` is inverted to get the correction impulse `ΔP`, which is applied as both a translational and rotational correction to each body.
+
+**DistanceConstraint** — scalar constraint `C = |pB − pA| − restLength`. The direction vector `n` becomes the gradient `∇C`. The effective mass is a scalar `w = wA + wB` where each weight accounts for both linear and angular contribution of the anchor offset:
+
+```cpp
+rnA = rA × n;    // scalar cross product
+wA  = invMassA + rnA² * invInertiaA;
+```
+
+Setting `compliance = 0` makes it a rigid rod. `compliance = 0.005` makes it a spring.
+
+**MotorConstraint** — instead of a positional correction it directly drives angular velocity:
+`angularVelocityA += torque * invInertiaA`, clamped to `maxTorque` per sub-step.
+
+**GearConstraint** — keeps `rotationB + ratio * rotationA = constant`. Useful for synchronized gear trains.
+
+### 3.5 Broad-Phase — Dynamic AABB Tree
+
+The broad-phase uses a self-balancing binary tree where every leaf node is a body's fat AABB (axis-aligned bounding box inflated by a small margin so minor movement doesn't require a tree update). Interior nodes store the union of their children's AABBs.
+
+Querying for overlapping pairs is a traversal: start at the root, descend only into branches whose AABB intersects the query AABB. This gives O(n log n) pair detection instead of O(n²) brute force.
+
+The tree rebalances via AVL-style rotations (`balance()`) after every insertion or removal. The `freeList` is a singly-linked list of recycled nodes to avoid repeated allocation.
+
+### 3.6 Narrow-Phase — Contact Generation
+
+Four contact generation paths:
+- **Circle–Circle**: distance < rA + rB → one contact point, normal along centre-to-centre axis
+- **Box–Box**: Separating Axis Test (SAT) on 4 edge normals → up to 2 contact points (clipped edge features)
+- **Circle–Box**: find closest point on box to circle centre, check distance < radius
+- **Box–Circle**: symmetric to above
+
+Each contact produces a `ContactManifold` with one or two `ContactPoint`s carrying penetration depth, contact normal, and local anchor offsets. These are fed into the XPBD solver as `ContactConstraint` instances — they use the same `solvePosition` / `solveVelocity` interface as all other constraints, keeping the solver generic.
+
+---
+
+## 4. WebAssembly Bridge & Web Worker
+
+### 4.1 Zero-Copy Render Protocol
+
+After each `world.step()`, the engine calls `getRenderData()` which fills a `std::vector<float>` (a member of `SimulationAPI`, so it never heap-allocates during the render loop):
+
+```
+[count, type,x,y,rot,w,h,vx,vy,angVel,bodyId, ... ×count, segCount, x1,y1,x2,y2, ... ×segCount]
+```
+
+Each body occupies exactly **10 floats** (stride). The function returns this as an `emscripten::typed_memory_view` — a JavaScript `Float32Array` that directly aliases the C++ vector's memory. No copy, no JSON serialisation. The JS render loop reads from this array at 60 fps without allocating a single object.
+
+```js
+// zero-copy: renderData is a Float32Array into WASM linear memory
+const count = data[0];
+for (let i = 0; i < count; i++) {
+    const idx = 1 + i * 10;
+    const x = data[idx+1], y = data[idx+2], rot = data[idx+3];
+    // ... draw
+}
+```
+
+### 4.2 Web Worker Message Bus
+
+The WASM module runs inside `public/physicsWorker.js` — a dedicated Web Worker. This keeps the physics step off the main thread so React rendering is never blocked by a slow frame.
+
+The worker receives typed messages (`STEP`, `ADD_BOX`, `ADD_HINGE_CONSTRAINT`, etc.) and replies with either fire-and-forget responses or promise-tracked `RESULT` messages:
+
+```js
+// in main thread (usePhysicsWorker.js)
+const sendMessageWithResult = (type, payload) => {
+    return new Promise((resolve) => {
+        const id = ++msgIdCounter.current;
+        callbacks.current.set(id, resolve);
+        worker.postMessage({ type, payload, id });
+    });
+};
+// worker replies: { type: 'RESULT', id, result: wasmBodyId }
+// main thread resolves the promise → stores wasmId in idMap
+```
+
+`addBox` and `addCircle` are async because they need the WASM body ID back to build the `idMap` (the mapping from React-side body IDs to WASM slot indices). Everything else (`step`, `setLinearVelocity`, constraint additions) is fire-and-forget.
+
+**rebuildScene** is called whenever a structural change happens that cannot be patched incrementally (body type change, rotation change, any constraint modification). It clears the WASM world, replays all bodies and constraints from Zustand state, and reconstructs `idMap`. A hidden "global ground" body (invisible, zero-size static box) is always added first — any constraint whose bodies include `null` (anchored to world) binds to this ground body instead.
+
+---
+
+## 5. Frontend — React Application
+
+**Stack:** React 19, Vite 8, Zustand 5, React Router 7, Axios.
+
+```
+src/
+├── store/editorStore.js       — single source of truth for all scene state
+├── commands/CommandManager.js — undo/redo stack
+├── hooks/
+│   ├── usePhysicsWorker.js    — Web Worker bridge + api object
+│   └── useWasm.js             — alternative: loads WASM on main thread
+├── builder/                   — visual scene editor
+│   ├── componentRegistry.js   — defines every body/constraint type and its defaults
+│   ├── serializationSystem.js — converts builder format → simulator format
+│   └── components/            — BuilderCanvas, LeftPalette, BuilderToolbar, property panels
+├── simulator/                 — live simulation view
+│   ├── SimulationCanvas.jsx   — rAF loop, calls api.step(), draws to Canvas 2D
+│   ├── HierarchyPanel.jsx     — scene graph tree
+│   ├── InspectorPanel.jsx     — live property editor
+│   └── canvas/simDraw.js      — all Canvas 2D draw calls (bodies, constraints, HUD, grid)
+├── pages/                     — BuilderPage, SimulatorPage, GalleryPage, AccountPage, Landing
+└── styles/                    — tokens.css, base.css, layout.css, toolbar.css, panels.css
+```
+
+### 5.1 Global State with Zustand
+
+A single `editorStore` holds:
+
+```js
+{
+  bodies: [],           // array of body definitions
+  constraints: [],      // array of constraint definitions
+  selectedNodeId: null, // currently selected body or constraint
+  idMap: {},            // { reactBodyId: wasmBodyIndex }
+  liveBodyData: {},     // { reactBodyId: { x, y, vx, vy, rotation, angularVelocity } }
+  gravity: 1.0,
+  sceneVersion: 0,      // incremented to force full re-mount of SimulationCanvas
+  activeTool: 'select', // or 'disk', 'block', 'hinge', 'spring', ...
+}
+```
+
+**Why Zustand over Redux?** Zustand has no boilerplate — you import a hook and read a slice. The store is also accessible outside React components (as `useEditorStore.getState()`) which is important for the Command Manager, which runs outside the component tree.
+
+The `liveBodyData` slice is written at 60 fps by `SimulationCanvas` as it reads the `Float32Array` from the worker. The InspectorPanel reads from it to display live position/velocity. Only the selected body's slice triggers a re-render because of Zustand's selector subscriptions.
+
+### 5.2 The Builder
+
+`BuilderCanvas` renders on a `<canvas>` element using Canvas 2D APIs. All drawing logic is in `builder/canvas/builderDraw.js`. Mouse input (click, drag, hover) is handled in `builder/canvas/useBuilderInput.js` as a custom hook.
+
+**Collision detection in the builder (pre-simulation check):** Before you can launch the simulator, the builder checks whether any two bodies that can actually collide with each other (based on their collision category/mask bitmasks) are currently overlapping. This is done in Zustand via a JS AABB check on every body mutation. If overlaps exist, the "Simulate" button is blocked and the offending bodies are highlighted — because overlapping bodies in WASM would cause the constraint solver to diverge immediately.
+
+**Component Registry:** `componentRegistry.js` is a declarative map that describes every supported body and constraint type — its display name, icon, colour, default property values, and which property controls to render. Adding a new constraint type means adding one entry here and a matching C++ constraint class.
+
+**Serialization:** The builder stores bodies with a `shape` field (`'Circle'`, `'Box'`) and `isStatic` bool. The simulator uses a numeric `type` field (0 = Static, 1 = Kinematic, 2 = Dynamic) matching the WASM `BodyType` enum. `serializationSystem.js` translates between these formats before switching pages.
+
+### 5.3 The Simulator
+
+`SimulationCanvas` owns the `requestAnimationFrame` loop:
+
+```
+each frame:
+  1. accumulate frameTime (capped at 100 ms to avoid spiral of death)
+  2. while accumulator >= fixedDt (1/60 s):
+       if gravity ≠ 1×: inject extra vy into all dynamic bodies via setLinearVelocity
+       api.step(fixedDt, 20)       — sends STEP to worker
+       accumulator -= fixedDt
+  3. api.requestRenderData()       — requests Float32Array back from worker
+  4. draw()                        — reads Float32Array, draws to canvas
+```
+
+The gravity multiplier is handled by injecting an extra velocity per tick rather than changing the WASM world's gravity constant. This is because changing the gravity field in WASM would require a message round-trip and reset accumulated forces. Adding `(gravity - 1.0) × G_BUILTIN × dt` to every dynamic body's vy achieves the same effect without any API change.
+
+`simDraw.js` draws:
+- **Grid** — faint lines every 50 px as spatial reference
+- **Bodies** — filled rectangles (boxes) and circles with selection highlight, static body hatching, body name labels
+- **Constraints** — coloured line segments between anchor points; motors get a circular arc, springs get a zigzag, pulleys get a three-segment rope
+- **Velocity vectors** — arrows scaled to body speed, optionally toggled per body
+- **HUD** — FPS counter, total mechanical energy (KE + PE), run/pause indicator
+
+### 5.4 Undo/Redo — Command Pattern
+
+`CommandManager` maintains two stacks (`undoStack`, `redoStack`, max 50 entries). Every mutation is wrapped in a `Command` object with `execute()` and `undo()` methods:
+
+**`ModifyPropertyCommand`** — covers property edits in the InspectorPanel. It knows which of three code paths to take after updating Zustand:
+- **Velocity props** (`vx`, `vy`): call `physicsApi.setLinearVelocity()` directly — no rebuild needed
+- **Material props** (`density`, `friction`, `restitution`): call `physicsApi.setBodyMaterial()` — updates mass/inertia in WASM without rebuild
+- **Structural props** (`rotation`, `type`): call `physicsApi.rebuildScene()` — must fully reconstruct the WASM world
+
+**`TranslateGroupCommand`** — moving a body in the simulator. Because bodies are constraint-connected, moving one needs to move the entire connected component (graph traversal via BFS on the constraint graph). The command snapshots the full scene before and after, so undo restores the entire connected subgraph.
+
+**`AddBodyCommand`** — places a body via both Zustand and the WASM worker, undone by removing from Zustand and calling `rebuildScene`.
+
+The CommandManager also has a `subscribe(listener)` method that the Toolbar watches — when the stack changes, the Undo/Redo buttons update their `disabled` state.
+
+### 5.5 CSS Architecture
+
+Global design tokens live in `src/styles/tokens.css` as CSS custom properties:
+```css
+--bg-void, --bg-surface, --bg-active
+--text-primary, --text-secondary, --text-muted, --text-disabled
+--accent, --accent-light, --accent-border
+--border-subtle, --border-mid
+--radius, --radius-sm
+--green, --green-dim, --blue, --blue-dim, --orange, --teal
+```
+
+Every component has a co-located `.css` file with a short BEM-style prefix to prevent class name collisions:
+`bt-` (BuilderToolbar), `lpal-` (LeftPalette), `ip-` (InspectorPanel), `simp-` (SimulatorPage), etc.
+
+Dynamic per-instance colors (constraint badge colors, active-card highlights) use CSS custom properties passed as inline `style`:
+```jsx
+// jsx
+<button style={{ '--lpal-color': color }} className="lpal-card lpal-card--active" />
+```
+```css
+/* css */
+.lpal-card--active {
+  background: color-mix(in srgb, var(--lpal-color) 12%, transparent);
+  border-color: var(--lpal-color);
+}
+```
+This eliminates all JavaScript colour math at paint time — the browser resolves `color-mix()` natively.
+
+---
+
+## 6. Backend — Spring Boot REST API
+
+**Stack:** Spring Boot 3.3, Java 21, Spring Security, Spring Data JPA, jjwt 0.12, Lombok, MySQL 8.
+
+### 6.1 Database Schema
+
+```sql
+CREATE TABLE users (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username    VARCHAR(50)  NOT NULL UNIQUE,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    password    VARCHAR(255) NOT NULL,      -- bcrypt hash
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FULLTEXT INDEX ft_users_search (username)
+);
+
+CREATE TABLE machines (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT NOT NULL,
+    forked_from_id  BIGINT NULL,             -- NULL if original; points to parent if forked
+    name            VARCHAR(100) NOT NULL,
+    description     TEXT NULL,
+    machine_data    JSON NOT NULL,           -- full bodies + constraints JSON blob
+    thumbnail       TEXT NULL,               -- base64 canvas snapshot
+    is_public       TINYINT(1) NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_machines_user       FOREIGN KEY (user_id)        REFERENCES users(id)    ON DELETE CASCADE,
+    CONSTRAINT fk_machines_forked_from FOREIGN KEY (forked_from_id) REFERENCES machines(id) ON DELETE SET NULL,
+    FULLTEXT INDEX ft_machines_search (name, description)
+);
+```
+
+`machine_data` stores the complete scene as a MySQL JSON column — no separate tables for bodies or constraints. This makes save and load a single row read/write and keeps the schema simple. The trade-off is that you cannot query individual bodies, but the use case never requires it.
+
+`forked_from_id` being `ON DELETE SET NULL` means if the original machine is deleted, forks keep their data but lose their lineage pointer — which is the right behaviour.
+
+### 6.2 Authentication — JWT
+
+Spring Security is configured as stateless (no session). Every protected endpoint goes through `JwtAuthFilter`:
+
+1. Extract `Authorization: Bearer <token>` header
+2. Parse and validate the JWT signature using the secret key (HS256)
+3. Check expiry
+4. Load `UserDetails` from DB by username claim
+5. Set `UsernamePasswordAuthenticationToken` in `SecurityContextHolder`
+
+Passwords are hashed with `BCryptPasswordEncoder` (Spring Security default, cost factor 10). The JWT payload contains only `{ sub: username, iat, exp }` — no roles, no sensitive data.
+
+### 6.3 REST Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|:----:|-------------|
+| POST | `/api/auth/signup` | — | Register — validates unique username/email, stores bcrypt hash, returns JWT |
+| POST | `/api/auth/login` | — | Verify password, return signed JWT |
+| GET | `/api/machines/gallery` | — | Paginated public machines, optional search query (FULLTEXT) |
+| GET | `/api/machines/my` | JWT | All machines owned by the calling user |
+| GET | `/api/machines/{id}` | optional | Machine detail — returns full `machine_data` JSON |
+| POST | `/api/machines/save` | JWT | Upsert — creates or updates owned machine |
+| POST | `/api/machines/{id}/fork` | JWT | Copies a public machine to the caller's account, sets `forked_from_id` |
+| DELETE | `/api/machines/{id}` | JWT | Delete — service layer verifies `user_id` matches caller |
+| GET | `/api/users/profile` | JWT | Return username, email, machine count |
+| PUT | `/api/users/profile` | JWT | Update username or email |
+| PUT | `/api/users/password` | JWT | Verify old password, store new bcrypt hash |
+| DELETE | `/api/users/account` | JWT | Delete account and all owned machines (CASCADE) |
+
+Global exception handling via `@ControllerAdvice` — `ResourceNotFoundException` → 404, `UnauthorizedException` → 403, Bean Validation errors → 400 with field-level messages.
+
+---
+
+## 7. Running the Project
+
+### Prerequisites
+- Node.js 20+, Java 21, MySQL 8
+- Emscripten SDK only if you need to recompile WASM (pre-built `solver.js` + `solver.wasm` are in `physc-frontend/public/`)
+
+### Database
+```bash
+mysql -u root -p < physc-backend/src/main/resources/schema.sql
+```
+
+### Backend
+```bash
+# set these or put them in application.properties
+export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/physc_db
+export SPRING_DATASOURCE_USERNAME=root
+export SPRING_DATASOURCE_PASSWORD=your_password
+export JWT_SECRET=your_256_bit_secret_key_here
+
+cd physc-backend
+./mvnw spring-boot:run
+# listening on http://localhost:8080
+```
+
+### Frontend
+```bash
+cd physc-frontend
+npm install
+npm run dev
+# http://localhost:5173
+```
+
+### Rebuild WASM (optional)
+```bash
+# inside physc-frontend/ with emsdk activated
+npm run build:wasm
+# runs: cmake → emcmake → ninja → copies solver.js + solver.wasm to public/
+```
+
+---
+
+## 8. Interviewer Q&A
+
+Below are cross-questions an interviewer is likely to ask, with honest, detailed answers.
+
+---
+
+### Physics Engine
+
+**Q: Why did you write your own physics engine instead of using an existing library like Box2D or Rapier?**
+
+The main goal was to learn how physics engines actually work, not just how to call their APIs. Box2D is a great library but it's a black box once you're using it. Writing the solver from scratch forced me to understand XPBD, how constraint resolution works mathematically, how broad-phase trees reduce pair detection cost, and what "compliance" actually means in the context of Lagrange multipliers.
+
+In a production product I would use an established library. But for a portfolio project, building it myself gave me something genuinely interesting to explain.
+
+---
+
+**Q: What is XPBD and why is it more stable than impulse-based methods?**
+
+XPBD — Extended Position-Based Dynamics — works by directly correcting body positions to satisfy constraints, then deriving velocity from the position change. The constraint violation `C(x)` and the correction impulse `Δλ` are solved as a small linear system per constraint per sub-step.
+
+The stability advantage is that position corrections are bounded — you can't over-correct a position into an obviously wrong state the way you can with velocity impulses in an iterative solver. In impulse-based solvers, if you have a stiff chain of constraints and a large time step, the impulses can amplify each other (the "ghost" / "jitter" problem). XPBD avoids this because each correction is derived from the actual positional error, not an accumulated velocity impulse.
+
+The trade-off: XPBD needs more sub-steps to converge (I use 20 sub-steps per 60 Hz frame). Impulse-based solvers can converge with fewer iterations if tuned well.
+
+---
+
+**Q: How does the compliance parameter work — can you walk through the math?**
+
+In classical constraint solving, `Δλ = −C / w` where `w` is the generalised inverse mass. The correction is exact — the constraint is perfectly enforced in one step.
+
+XPBD introduces a regularisation term `α̃ = compliance / dt²`:
+
+```
+Δλ = (−C − α̃ · λ) / (w + α̃)
+```
+
+When compliance → 0, `α̃ → 0` and we recover the rigid case. When compliance is large, `α̃` dominates the denominator, making `Δλ` small — the constraint allows more violation, behaving like a spring. The `−α̃ · λ` term is a "spring-back" force: the accumulated multiplier `λ` acts like stored elastic energy that pulls the system back toward the rest state. This is what makes a `DistanceConstraint` with `compliance = 0.005` behave like a spring without any separate spring force code.
+
+---
+
+**Q: How does your broad-phase collision detection work?**
+
+I use a Dynamic AABB Tree — a self-balancing binary tree where each leaf is a body's axis-aligned bounding box, padded by a small margin. Interior nodes store the union AABB of their children.
+
+To find all overlapping pairs, I query each leaf against the tree. Traversal starts at the root: if a node's AABB doesn't overlap the query AABB, skip the entire subtree. This gives roughly O(n log n) complexity.
+
+The tree rebalances after insertions using AVL-style rotations, keeping the tree height logarithmic. Removed nodes go into a free list and get reused, avoiding heap reallocation.
+
+The fat AABB margin means small movements (like a slowly rotating body) don't require a tree update every frame — the body has to move outside its padded box before the tree node is repositioned.
+
+---
+
+**Q: What's the difference between broad-phase and narrow-phase? Why two phases?**
+
+Broad-phase gives a cheap set of "candidate pairs" — pairs of bodies whose bounding boxes overlap. It doesn't tell you *how* they collide or *where* the contact point is, just that they *might* be touching. The AABB tree makes this O(n log n).
+
+Narrow-phase takes each candidate pair and runs exact collision geometry: for two circles it's a distance check; for two boxes it's the Separating Axis Test across 4 edge normals; for circle-box it finds the closest point on the box polygon to the circle centre. This gives exact penetration depth, contact normal, and contact points. Narrow-phase is O(1) per pair but expensive per call, so you only run it on the small set of pairs the broad-phase filtered in.
+
+---
+
+**Q: Your Handle<T> system — isn't a simple pointer cheaper?**
+
+Yes, a pointer is cheaper by one indirection. The reason to avoid raw pointers into a `std::vector<Body>` is that vectors reallocate when they grow, invalidating all existing pointers. You'd have to either use a stable allocator or store indices — and indices don't tell you if the slot has been reused. The generation counter solves that: it lets you distinguish "body at slot 5, version 3" from "body at slot 5, version 4 (different body)". This matters especially in the constraint system — if a body gets deleted while a constraint still holds a handle to it, `pool.get(handle)` returns `nullptr` safely instead of reading garbage.
+
+---
+
+### WebAssembly & Performance
+
+**Q: How does the zero-copy render protocol work exactly?**
+
+The C++ `SimulationAPI` has a `std::vector<float> renderData` as a member. After each world step, `getRenderData()` fills it (not allocating — just `push_back` into the pre-grown vector) and returns it via `emscripten::typed_memory_view`. On the JavaScript side this becomes a `Float32Array` that directly views the WASM linear memory — no copy, no JSON serialisation. The JS render loop reads body positions directly from that typed array at 60 fps. At 100 bodies that's 1000 floats — fast enough that it never shows up in the profiler.
+
+---
+
+**Q: Why run the physics in a Web Worker? What would break if you ran it on the main thread?**
+
+JavaScript is single-threaded on the main thread. If `world.step()` takes 8 ms (which it can with many constraints and 20 sub-steps), that eats into the 16.6 ms frame budget. React re-renders, event handling, and the Canvas 2D draw call all share that budget. With the worker, the WASM step runs in parallel with the React render pass — the main thread draws last frame's data while the worker steps physics for the next frame.
+
+The downside is that body state has to cross a thread boundary (the `Float32Array` message). I handle this with a ref (`renderDataRef`) that the main thread reads each rAF tick — it's the latest data the worker has published, which at 60 fps is at most 16 ms stale.
+
+---
+
+**Q: How do you handle the asynchronous nature of the worker when adding bodies? If addBox is async, how do you keep the idMap consistent?**
+
+`addBox` and `addCircle` return Promises because they need the WASM-generated body ID back. The worker receives `ADD_BOX` with a message ID, creates the body in WASM, then posts back `{ type: 'RESULT', id: <msgId>, result: <wasmBodyIndex> }`. The main thread resolves the Promise, stores `idMap[reactId] = wasmId`, and only proceeds to add constraints after all bodies have resolved.
+
+In `rebuildScene`, bodies are added with `await sendMessageWithResult(...)` in sequence, so the idMap is fully populated before the constraint loop starts. Constraints don't need to be awaited because they don't return IDs.
+
+---
+
+### Frontend
+
+**Q: Why Zustand instead of Redux or Context?**
+
+Three reasons. First, no boilerplate — no action creators, no reducers, no dispatch. You call store actions directly. Second, the store is accessible outside React via `useEditorStore.getState()`, which is essential for the CommandManager (which runs outside any component). Context can't do that cleanly. Third, Zustand's selector subscriptions mean a component only re-renders when the specific slice it subscribed to changes. At 60 Hz, `liveBodyData` changes every frame — only the InspectorPanel (which subscribes to it) re-renders, not the entire tree.
+
+---
+
+**Q: How does the undo/redo work when the WASM world also needs to be updated?**
+
+Each `Command` knows how to update both Zustand state and the WASM world. `ModifyPropertyCommand` has three paths depending on which property changed:
+
+- **Velocity** (`vx`, `vy`): calls `physicsApi.setLinearVelocity()` directly — fast, no rebuild
+- **Material** (`density`, `friction`, `restitution`): calls `physicsApi.setBodyMaterial()` — updates mass/inertia in-place in WASM
+- **Structural** (`type`, `rotation`): calls `physicsApi.rebuildScene()` — completely reconstructs the WASM world from Zustand state
+
+Rebuild is expensive (clears and re-adds everything) but it's only triggered when a property requires it. For undo, the command restores the old Zustand value and calls the same WASM update path. The WASM world always ends up consistent with Zustand because every command that touches WASM does so deterministically from Zustand state.
+
+---
+
+**Q: How do you handle moving a body that is connected to other bodies by constraints?**
+
+`TranslateGroupCommand` does a BFS from the selected body through the constraint graph to find all reachable bodies (the connected component). All bodies in that component are translated together, and any constraint anchors between them are translated the same amount. This prevents constraints from stretching when you move a group.
+
+The command snapshots the entire scene before and after (deep copy via `JSON.parse(JSON.stringify(...))`) so undo is a simple snapshot restore. It's not the most memory-efficient approach — a diff would be smaller — but at the scale of scenes in this app (typically < 30 bodies) the JSON snapshot is a few KB and the simplicity is worth it.
+
+---
+
+**Q: You mentioned CSS custom properties for dynamic colors. Why not just use inline styles entirely?**
+
+Inline styles can't use pseudo-classes or compound selectors. If I want `:hover` to change the tint of a card that has a per-instance color, I can't express that in an inline style. By passing `--lpal-color` as a CSS variable, the CSS can reference it in any selector:
+
+```css
+.lpal-card:hover { background: color-mix(in srgb, var(--lpal-color) 20%, transparent); }
+.lpal-card--active .lpal-card-icon { color: var(--lpal-color); }
+```
+
+And `color-mix()` does the opacity blending natively — I removed the `hexToRgb()` JavaScript helper function entirely because the browser now handles it. One less dependency, one less source of bugs.
+
+---
+
+### Backend
+
+**Q: Why store machine_data as a JSON column instead of normalising bodies and constraints into separate tables?**
+
+The access pattern is always "load the whole machine" or "save the whole machine" — I never need to query "all machines that contain a HingeConstraint" or "find the body with ID 103". Normalising into separate tables would add joins without any query benefit. Using a JSON column means save and load are single-row read/writes, and the schema stays simple. MySQL 8's JSON column type also gives me validation (rejects malformed JSON) and the ability to add JSON path queries later if I need them.
+
+---
+
+**Q: How does your JWT implementation work?**
+
+On login, `AuthService` verifies the password with `BCryptPasswordEncoder.matches()`, then calls `JwtService.generateToken(username)` which uses `jjwt` to build a signed HS256 token with a subject (username), issued-at, and expiry (24 hours by default).
+
+Every subsequent request hits `JwtAuthFilter` before Spring Security's filter chain. It extracts the `Authorization: Bearer` header, calls `JwtService.extractUsername()`, then `UserDetailsServiceImpl.loadUserByUsername()` to load the user from DB, validates the token hasn't expired, and sets the authentication in `SecurityContextHolder`. Spring Security then enforces endpoint-level rules.
+
+There's no refresh token — on expiry the client must log in again. For a production app I'd add a refresh token stored in an httpOnly cookie, but this was kept simple intentionally.
+
+---
+
+**Q: How do you prevent one user from deleting another user's machine?**
+
+`MachineService.deleteMachine(machineId, callerUsername)` loads the machine from DB and checks `machine.getUser().getUsername().equals(callerUsername)`. If they don't match it throws `UnauthorizedException` which the `GlobalExceptionHandler` maps to HTTP 403. The caller's username comes from the JWT — not from a request parameter — so it can't be spoofed.
+
+---
+
+**Q: What would you improve if you had more time?**
+
+A few things:
+
+1. **Sleeping bodies** — XPBD doesn't have a built-in sleep mechanism. Bodies that have come to rest still get integrated every frame. Adding a sleep check (velocity below threshold for N frames) would reduce CPU usage significantly on complex scenes.
+
+2. **Soft body / cloth** — the constraint system already supports distance constraints between many pairs, which is the basis for cloth simulation. Exposing a "rope" constraint that creates a chain of distance constraints would be a natural extension.
+
+3. **Replay system** — record body state at every tick into a ring buffer, allow the user to scrub backwards and forwards through the simulation. The XPBD state is fully deterministic so you'd only need to store positions, not replay forces.
+
+4. **JWT refresh tokens** — the current implementation expires tokens and forces re-login. A proper refresh token flow (httpOnly cookie, rotation on use) would be more production-ready.
+
+5. **Thumbnail generation** — the `thumbnail` column exists but isn't populated. Generating a Canvas snapshot on save and storing it as a data URL would make the gallery cards much more useful.
