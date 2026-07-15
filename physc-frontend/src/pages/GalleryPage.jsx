@@ -17,11 +17,14 @@ export default function GalleryPage() {
   const [forkedId,  setForkedId]  = useState(null);
 
   const fetchMachines = useCallback(async (q) => {
-    if (q.trim().length < 2) { setMachines([]); setLoading(false); return; }
     setLoading(true);
     setError('');
     try {
-      setMachines(await machineApi.search(q.trim()));
+      if (q.trim().length >= 2) {
+        setMachines(await machineApi.search(q.trim()));
+      } else {
+        setMachines(await machineApi.listPublic());
+      }
     } catch {
       setError('Failed to load machines.');
     } finally {
@@ -93,8 +96,6 @@ export default function GalleryPage() {
 
         {loading ? (
           <p className="gp-empty">Loading…</p>
-        ) : query.trim().length < 2 ? (
-          <p className="gp-empty">Type at least 2 characters to search.</p>
         ) : machines.length === 0 ? (
           <p className="gp-empty">No Machines Found.</p>
         ) : (
